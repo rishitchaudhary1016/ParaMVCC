@@ -15,6 +15,8 @@ from ...util.vl_utils import (
 from .lora_hparams import LoRAHyperParams
 from .lora_multimodal_hparams import LoRAMultimodalHyperParams
 
+print("***** LOADED LORA_MAIN.PY *****")
+print(__file__)
 
 def apply_lora_to_model(
         model: AutoModelForCausalLM,
@@ -67,29 +69,46 @@ def execute_lora(
         peft_model = model
     else:
         peft_config = Config(
-            task_type=TaskType.CAUSAL_LM,
-            inference_mode=False,
-            r=hparams.rank,
-            lora_alpha=hparams.lora_alpha, lora_dropout=hparams.lora_dropout,
-            layers_to_transform=hparams.layers if len(hparams.layers) > 0 else None,
-            target_modules=hparams.target_modules
-        )
-        peft_model = get_peft_model(model, peft_config)
+        task_type=TaskType.CAUSAL_LM,
+        inference_mode=False,
+        r=hparams.rank,
+        lora_alpha=hparams.lora_alpha,
+        lora_dropout=hparams.lora_dropout,
+        layers_to_transform=hparams.layers if len(hparams.layers) > 0 else None,
+        target_modules=hparams.target_modules,
+
+        target_r=hparams.rank,
+        init_r=hparams.rank,
+        tinit=0,
+        tfinal=0,
+        deltaT=1,
+                total_step=hparams.num_steps
+    )
+
+    peft_model = get_peft_model(model, peft_config)
+
+    print("Active adapters:", peft_model.active_adapters)
+    print("PEFT config:", peft_model.peft_config)
+    print("Adapter state dict keys:", list(peft_model.state_dict().keys())[:20])
 
     peft_model.is_parallelizable = True
     peft_model.model_parallel = True
-    if hasattr(peft_model, 'print_trainable_parameters'):
+
+    if hasattr(peft_model, "print_trainable_parameters"):
         peft_model.print_trainable_parameters()
+
     requests = deepcopy(requests)
+
     for request in requests:
         if '{}' in request['prompt']:
             request['prompt'] = request['prompt'].format(request['subject'])
+
         print(
             f"Executing LoRA algo for: "
             f"[{request['prompt']}] -> [{request['target_new']}]"
         )
-    device = normalize_device(getattr(hparams, "device", None))
-    # Define inputs
+
+    device = normalize_device(getattr(hparams, "device", None))    # Define inputs
     texts = [r["prompt"] for r in requests]
     targets = [r["target_new"] for r in requests]
 
@@ -177,6 +196,7 @@ def execute_lora(
 
         # if loss_meter.avg < 1e-3:
         #     break
+        
     return peft_model
 
 
@@ -237,23 +257,37 @@ def execute_multimodal_lora(
         peft_model = model
     else:
         peft_config = Config(
-            task_type=TaskType.CAUSAL_LM,
-            inference_mode=False,
-            r=hparams.rank,
-            lora_alpha=hparams.lora_alpha, lora_dropout=hparams.lora_dropout,
-            target_modules=hparams.target_modules
-        )
-        peft_model = get_peft_model(model, peft_config)
+    task_type=TaskType.CAUSAL_LM,
+    inference_mode=False,
+    r=hparams.rank,
+    lora_alpha=hparams.lora_alpha,
+    lora_dropout=hparams.lora_dropout,
+    layers_to_transform=hparams.layers if len(hparams.layers) > 0 else None,
+    target_modules=hparams.target_modules
+)
+        
+    peft_model = get_peft_model(model, peft_config)
+
+    print("\n========== AFTER get_peft_model ==========")
+    peft_model.print_trainable_parameters()
+
+    print("\nLoRA modules found:")
+    for name, module in peft_model.named_modules():
+        if "lora" in name.lower():
+            print(name)
 
     peft_model.to(dtype=torch.float32)
     peft_model.is_parallelizable = True
     peft_model.model_parallel = True
+
     from torch.optim.lr_scheduler import ExponentialLR
     opt = torch.optim.SGD(
         peft_model.parameters(),
         lr=hparams.lr,
         weight_decay=hparams.weight_decay,
     )
+
+    sheduler = ExponentialLR(opt, gamma=hparams.sh_lr)
     sheduler = ExponentialLR(opt, gamma=hparams.sh_lr)
     if hasattr(peft_model, 'print_trainable_parameters'):
         peft_model.print_trainable_parameters()

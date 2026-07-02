@@ -23,3 +23,17 @@ delta.txt
 # models
 generation
 judge
+# Python cache
+*.pyc
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Output
+output/
+
+# Temporary
+*.tmp

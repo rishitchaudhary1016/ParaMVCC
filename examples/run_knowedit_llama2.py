@@ -93,7 +93,7 @@ if __name__ == "__main__":
         raise NotImplementedError
     
 
-    datas = KnowEditDataset(args.data_dir,size=args.ds_size)
+    datas = KnowEditDataset("data/counterfact/counterfact-edit.json",size=args.ds_size)
     if args.datatype == 'counterfact' or args.datatype == 'recent' or args.datatype == 'zsre':
         prompts=[data['prompt'] for data in datas]
         subjects=[data['subject'] for data in datas]

@@ -591,15 +591,38 @@ class BaseEditor:
         if sequential_edit:
             for i, request in enumerate(tqdm(requests, total=len(requests))):
                 edited_model, weights_copy, icl_examples = edit_func(request)
-                post_edit_results(all_results, request, edited_model, i, eval_metric, test_generation, icl_examples, **kwargs)
+
+                post_edit_results(
+                    all_results,
+                    request,
+                    edited_model,
+                    i,
+                    eval_metric,
+                    test_generation,
+                    icl_examples,
+                    **kwargs
+                )
+
         else:
             for i, request in enumerate(tqdm(requests, total=len(requests))):
                 edited_model, weights_copy, icl_examples = edit_func(request)
-                post_edit_results(all_results, request, edited_model, i, eval_metric, test_generation, icl_examples, **kwargs)
+
+                post_edit_results(
+                    all_results,
+                    request,
+                    edited_model,
+                    i,
+                    eval_metric,
+                    test_generation,
+                    icl_examples,
+                    **kwargs
+                )
+
                 restore_after_edit(self, edited_model, weights_copy)
 
         if isinstance(edited_model, LORA):
             edited_model = edited_model.model
+
         if len(all_results) != 0:
             summary_metrics(all_results)
 

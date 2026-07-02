@@ -1,0 +1,9 @@
+{
+    "version_id": "version1",
+    "parent_version": null,
+    "base_model": "gpt2",
+    "editing_method": "LoRA",
+    "dataset": "ZSRE",
+    "created_by": "EasyEdit",
+    "status": "active"
+}

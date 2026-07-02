@@ -1,6 +1,18 @@
-import os.path
+import os
 import sys
-sys.path.append('..')
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+PARAMVCC_PATH = os.path.join(PROJECT_ROOT, "paramvcc")
+
+if PARAMVCC_PATH not in sys.path:
+    sys.path.insert(0, PARAMVCC_PATH)
+
+from version_manager import VersionManager
+
 import json
 import random
 from easyeditor import (
@@ -45,14 +57,25 @@ if __name__ == "__main__":
     else:
         raise NotImplementedError
 
-    test_data = json.load(open(os.path.join(args.data_dir, 'zsre_mend_eval_portability_gpt4.json'), 'r', encoding='utf-8'))
+    test_data = json.load(
+    open(
+        os.path.join(args.data_dir, "portability", "One Hop", "zsre_mend_eval_portability_gpt4.json"),
+        "r",
+        encoding="utf-8",
+    )
+)
 
-    if args.ds_size is not None:
-        test_data = random.sample(test_data, args.ds_size)
+    test_data = test_data[:1]
+    print("\n==============================")
+    print("Create New Knowledge Edit")
+    print("==============================")
 
-    prompts = [test_data_['src'] for test_data_ in test_data]
-    rephrase_prompts = [edit_data_['rephrase'] for edit_data_ in test_data]
-    target_new = [edit_data_['alt'] for edit_data_ in test_data]
+    user_prompt = input("Question: ").strip()
+    user_answer = input("New Answer: ").strip()
+
+    prompts = [user_prompt]
+    rephrase_prompts = [user_prompt]
+    target_new = [user_answer]
     locality_prompts = [edit_data_['loc'] for edit_data_ in test_data]
     locality_ans = [edit_data_['loc_ans'] for edit_data_ in test_data]
     portability_prompts = [edit_data_['portability']['New Question'] for edit_data_ in test_data]
@@ -72,6 +95,7 @@ if __name__ == "__main__":
     }
     subject = [edit_data_['subject'] for edit_data_ in test_data]
     hparams = editing_hparams.from_hparams(args.hparams_dir)
+    print(hparams)
 
     if args.editing_method == 'IKE':
         train_data_path = os.path.join(args.data_dir, 'zsre_mend_train_10000.json')
@@ -82,6 +106,7 @@ if __name__ == "__main__":
         train_ds = None
 
     editor = BaseEditor.from_hparams(hparams)
+
     metrics, edited_model, _ = editor.edit(
         prompts=prompts,
         rephrase_prompts=rephrase_prompts,
@@ -90,7 +115,49 @@ if __name__ == "__main__":
         train_ds=train_ds,
         locality_inputs=locality_inputs,
         portability_inputs=portability_inputs,
-        keep_original_weight=True
+        keep_original_weight=False
     )
 
-    json.dump(metrics, open(os.path.join(args.metrics_save_dir, f'{args.editing_method}_results.json'), 'w'), indent=4)
+    print(edited_model)
+    print(type(edited_model))
+    print(hasattr(edited_model, "active_adapters"))
+    if hasattr(edited_model, "active_adapters"):
+        print("Active adapters after editor.edit():", edited_model.active_adapters)
+
+print("\nTrainable parameters:")
+edited_model.print_trainable_parameters()
+
+print("\nNamed parameters containing 'lora':")
+for name, param in edited_model.named_parameters():
+    if "lora" in name.lower():
+        print(name, param.shape, param.requires_grad)
+
+print("\nAdapter config:")
+print(edited_model.peft_config)
+
+print("\nAdapter state dict keys:")
+print(type(edited_model))
+print(hasattr(edited_model, "active_adapters"))
+if hasattr(edited_model, "active_adapters"):
+    print(edited_model.active_adapters)
+
+
+vm = VersionManager()
+
+version_number, version_path = vm.create_new_version()
+
+print(f"\nCreating Version {version_number}")
+print(f"Saving adapter to: {version_path}")
+
+edited_model.save_pretrained(version_path)
+
+print(f"Version {version_number} saved successfully.")
+
+json.dump(
+    metrics,
+    open(
+        os.path.join(args.metrics_save_dir, f'{args.editing_method}_results.json'),
+        'w'
+    ),
+    indent=4
+)

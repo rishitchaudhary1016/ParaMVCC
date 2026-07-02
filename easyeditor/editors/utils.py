@@ -40,11 +40,12 @@ def restore_after_edit(editor, edited_model, weights_copy):
         return edited_model
 
     if alg_name in PEFT_RESTORE_ALGS:
-        restored_model = edited_model.unload()
-        if restored_model is not None:
-            editor.model = restored_model
-        if hasattr(editor.model, "peft_config"):
-            del editor.model.peft_config
+        # Restore only the editor's working model.
+        # Do NOT unload the returned edited_model.
+        if hasattr(editor.model, "unload"):
+            restored_model = editor.model.unload()
+            if restored_model is not None:
+                editor.model = restored_model
         return edited_model
 
     if alg_name in KEEP_EDITED_MODEL_ALGS:
