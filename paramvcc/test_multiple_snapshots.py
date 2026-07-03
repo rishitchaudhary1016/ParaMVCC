@@ -2,18 +2,18 @@ from snapshot_controller import SnapshotController
 
 sc = SnapshotController()
 
-sc.login("UserA")
-sc.login("UserB")
+session1 = sc.login()
+session2 = sc.login()
 
 print("\nInitial Snapshots")
 print("-----------------")
-print("UserA ->", sc.get_version("UserA"))
-print("UserB ->", sc.get_version("UserB"))
+print("Session", session1, "->", sc.get_version(session1))
+print("Session", session2, "->", sc.get_version(session2))
 
-print("\nUpdating UserA to Version 9...")
-sc.update_snapshot("UserA", 9)
+print("\nUpdating Session", session1, "to Version 9...")
+sc.update_snapshot(session1, 9)
 
 print("\nFinal Snapshots")
 print("---------------")
-print("UserA ->", sc.get_version("UserA"))
-print("UserB ->", sc.get_version("UserB"))
+print("Session", session1, "->", sc.get_version(session1))
+print("Session", session2, "->", sc.get_version(session2))

@@ -10,47 +10,45 @@ class SnapshotController:
         self.session_manager = SessionManager()
         self.version_manager = VersionManager()
 
-    def login(self, user_id):
+    def login(self):
 
-        self.session_manager.create_session(user_id)
+        session_id = self.session_manager.create_session()
 
-        version = self.session_manager.get_version(user_id)
-
-        if version is None:
-
-            version = self.version_manager.latest_version()
-
-            self.session_manager.assign_version(
-                user_id,
-                version
-            )
-
-        print(f"\n[{user_id}] Active Snapshot : Version {version}")
-
-        return version
-
-    def get_version(self, user_id):
-
-        return self.session_manager.get_version(user_id)
-
-    def get_adapter_path(self, user_id):
-
-        version = self.get_version(user_id)
-
-        path = os.path.join(
-            "versions",
-            f"version{version}"
-        )
-
-        return path
-
-    def update_snapshot(self, user_id, version):
+        version = self.version_manager.latest_version()
 
         self.session_manager.assign_version(
-            user_id,
+            session_id,
             version
         )
 
         print(
-            f"[Snapshot] {user_id} switched to Version {version}"
+            f"\n[Session {session_id}] Active Snapshot : Version {version}"
+        )
+
+        return session_id
+
+    def get_version(self, session_id):
+
+        return self.session_manager.get_version(
+            session_id
+        )
+
+    def get_adapter_path(self, session_id):
+
+        version = self.get_version(session_id)
+
+        return os.path.join(
+            "versions",
+            f"version{version}"
+        )
+
+    def update_snapshot(self, session_id, version):
+
+        self.session_manager.assign_version(
+            session_id,
+            version
+        )
+
+        print(
+            f"[Snapshot] Session {session_id} switched to Version {version}"
         )

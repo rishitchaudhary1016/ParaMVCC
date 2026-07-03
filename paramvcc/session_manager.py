@@ -1,23 +1,30 @@
 class SessionManager:
+
     def __init__(self):
-        # user_id -> version_number
+
         self.sessions = {}
+        self.next_session_id = 1
 
-    def create_session(self, user_id):
-        if user_id not in self.sessions:
-            self.sessions[user_id] = None
+    def create_session(self):
 
-        print(f"[SessionManager] Session created for {user_id}")
+        session_id = self.next_session_id
 
-    def assign_version(self, user_id, version):
-        self.sessions[user_id] = version
+        self.next_session_id += 1
+
+        self.sessions[session_id] = None
+
+        print(f"[SessionManager] Created Session {session_id}")
+
+        return session_id
+
+    def assign_version(self, session_id, version):
+
+        self.sessions[session_id] = version
 
         print(
-            f"[SessionManager] {user_id} assigned Version {version}"
+            f"[SessionManager] Session {session_id} assigned Version {version}"
         )
 
-    def get_version(self, user_id):
-        return self.sessions.get(user_id)
+    def get_version(self, session_id):
 
-    def list_sessions(self):
-        return self.sessions
+        return self.sessions.get(session_id)
