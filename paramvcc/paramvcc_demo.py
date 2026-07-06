@@ -4,6 +4,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 
 from snapshot_controller import SnapshotController
+from knowledge_editing_engine import KnowledgeEditingEngine
 
 
 def load_model(adapter_path):
@@ -12,7 +13,9 @@ def load_model(adapter_path):
     model = AutoModelForCausalLM.from_pretrained("gpt2")
 
     if adapter_path is None:
+
         print("\nLoading Base GPT-2...")
+
         return tokenizer, model
 
     print(f"\nLoading {adapter_path}...")
@@ -30,18 +33,18 @@ def load_model(adapter_path):
 
 
 snapshot = SnapshotController()
+engine = KnowledgeEditingEngine()
+
 
 while True:
 
     print("\n======================================")
-    print("           ParaMVCC")
+    print("            ParaMVCC")
     print("======================================")
 
-    user = input("\nEnter User ID: ").strip()
+    session_id = snapshot.login()
 
-    version = snapshot.login(user)
-
-    adapter_path = snapshot.get_adapter_path(user)
+    adapter_path = snapshot.get_adapter_path(session_id)
 
     tokenizer, model = load_model(adapter_path)
 
@@ -49,15 +52,22 @@ while True:
 
     while True:
 
-        print("\n1. Ask Question")
-        print("2. Logout")
-        print("3. Exit")
+        print("\n--------------------------------------")
+        print(f"Current Session : {session_id}")
+        print(f"Current Version : {snapshot.get_version(session_id)}")
+        print("--------------------------------------")
 
-        option = input("\nChoice: ").strip()
+        print("1. Ask Question")
+        print("2. Edit Knowledge")
+        print("3. Show Snapshot")
+        print("4. Logout")
+        print("5. Exit")
+
+        option = input("\nChoice : ").strip()
 
         if option == "1":
 
-            question = input("\nAsk Question: ")
+            question = input("\nQuestion : ")
 
             inputs = tokenizer(
                 question,
@@ -68,9 +78,8 @@ while True:
 
                 outputs = model.generate(
                     **inputs,
-                    max_new_tokens=1,
+                    max_new_tokens=10,
                     do_sample=False,
-                    num_beams=1,
                     eos_token_id=tokenizer.eos_token_id,
                     pad_token_id=tokenizer.eos_token_id,
                 )
@@ -82,16 +91,54 @@ while True:
                 skip_special_tokens=True
             ).strip()
 
-            print("\n==============================")
-            print("Model Output")
-            print("==============================")
-            print(answer)
+            print("\nAnswer :", answer)
 
         elif option == "2":
-            break
+
+            question = input("\nQuestion : ")
+            answer = input("New Answer : ")
+
+            result = engine.create_edit(
+                question,
+                answer
+            )
+
+            snapshot.update_snapshot(
+                session_id,
+                result["version_number"]
+            )
+
+            adapter_path = snapshot.get_adapter_path(
+                session_id
+            )
+
+            tokenizer, model = load_model(
+                adapter_path
+            )
+
+            model.eval()
+
+            print("\n======================================")
+            print("Knowledge Edit Successful")
+            print("======================================")
+            print("New Version :", result["version_number"])
 
         elif option == "3":
+
+            print("\n========== Snapshot ==========")
+            print("Session :", session_id)
+            print("Version :", snapshot.get_version(session_id))
+            print("Adapter :", snapshot.get_adapter_path(session_id))
+            print("==============================")
+
+        elif option == "4":
+
+            break
+
+        elif option == "5":
+
             exit()
 
         else:
+
             print("Invalid Choice")

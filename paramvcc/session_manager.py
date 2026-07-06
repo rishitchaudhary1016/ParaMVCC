@@ -1,17 +1,53 @@
+import json
+import os
+
+
 class SessionManager:
+
+    SESSION_FILE = "paramvcc/sessions.json"
 
     def __init__(self):
 
-        self.sessions = {}
-        self.next_session_id = 1
+        if not os.path.exists(self.SESSION_FILE):
+
+            with open(self.SESSION_FILE, "w") as f:
+
+                json.dump(
+                    {
+                        "next_session_id": 1,
+                        "sessions": {}
+                    },
+                    f,
+                    indent=4
+                )
+
+    def load(self):
+
+        with open(self.SESSION_FILE, "r") as f:
+
+            return json.load(f)
+
+    def save(self, data):
+
+        with open(self.SESSION_FILE, "w") as f:
+
+            json.dump(
+                data,
+                f,
+                indent=4
+            )
 
     def create_session(self):
 
-        session_id = self.next_session_id
+        data = self.load()
 
-        self.next_session_id += 1
+        session_id = data["next_session_id"]
 
-        self.sessions[session_id] = None
+        data["next_session_id"] += 1
+
+        data["sessions"][str(session_id)] = None
+
+        self.save(data)
 
         print(f"[SessionManager] Created Session {session_id}")
 
@@ -19,7 +55,11 @@ class SessionManager:
 
     def assign_version(self, session_id, version):
 
-        self.sessions[session_id] = version
+        data = self.load()
+
+        data["sessions"][str(session_id)] = version
+
+        self.save(data)
 
         print(
             f"[SessionManager] Session {session_id} assigned Version {version}"
@@ -27,4 +67,6 @@ class SessionManager:
 
     def get_version(self, session_id):
 
-        return self.sessions.get(session_id)
+        data = self.load()
+
+        return data["sessions"].get(str(session_id))
