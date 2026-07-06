@@ -4,7 +4,6 @@ engine = KnowledgeEditingEngine()
 
 result = engine.create_edit(
     question="When was the inception of IAAF Combined Events Challenge?",
-    subject="IAAF Combined Events Challenge",
     answer="2015"
 )
 

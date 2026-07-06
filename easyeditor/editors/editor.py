@@ -96,7 +96,7 @@ class BaseEditor:
             elif 'chatglm-api' in self.model_name.lower():
                 self.model, self.tok = None, None
                 self.hparams = hparams
-                return
+                
             elif 'gpt-3.5' in self.model_name.lower():
                 self.model, self.tok = None, None
             elif 'gpt' in self.model_name.lower():
@@ -149,6 +149,10 @@ class BaseEditor:
             self.model.to(self.device)
 
         self.hparams = hparams
+    def set_model(self, model, tokenizer):
+
+        self.model = model
+        self.tok = tokenizer
 
     def edit(self,
              prompts: Union[str, List[str]],

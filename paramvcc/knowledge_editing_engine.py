@@ -17,6 +17,10 @@ from easyeditor import (
 )
 
 
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel
+
+
 class KnowledgeEditingEngine:
 
     def __init__(self):
@@ -120,6 +124,19 @@ class KnowledgeEditingEngine:
         subject = [
             detected_subject
         ]
+
+        tokenizer = AutoTokenizer.from_pretrained("gpt2")
+
+        tokenizer.pad_token = tokenizer.eos_token
+
+        model = AutoModelForCausalLM.from_pretrained("gpt2")
+
+        model.config.pad_token_id = tokenizer.eos_token_id
+
+        self.editor.set_model(
+            model,
+            tokenizer
+        )
 
         metrics, edited_model, _ = self.editor.edit(
             prompts=prompts,
