@@ -7,8 +7,8 @@ from snapshot_controller import SnapshotController
 from knowledge_editing_engine import KnowledgeEditingEngine
 
 
-QUESTION = "When was the inception of IAAF Combined Events Challenge?"
-
+QUESTION = ""
+NEW_ANSWER = ""
 
 def load_model(adapter_path):
 
@@ -87,9 +87,16 @@ print(f"Version   : {version_b_before}")
 
 print("\nEditing Session A...\n")
 
+QUESTION = input("Enter Question to Edit : ").strip()
+NEW_ANSWER = input("Enter New Answer       : ").strip()
+
+print("\nApplying Knowledge Edit...")
+print(f"Question   : {QUESTION}")
+print(f"New Answer : {NEW_ANSWER}")
+
 result = engine.create_edit(
     question=QUESTION,
-    answer="2050"
+    answer=NEW_ANSWER
 )
 
 snapshot.update_snapshot(
